@@ -57,7 +57,6 @@ state = [
     [94, 79, 8, 54],
 ]
 
-inv_shift_rows(state)
 inv_mix_columns(state)
 inv_shift_rows(state)
 print(matrix2bytes(state))
