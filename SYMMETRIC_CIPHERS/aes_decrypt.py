@@ -1,8 +1,9 @@
-import diffusion
+import base64
+from pwn import *
 import Structure_of_AES
 import addroundkey
 import confucion_sustitucion
-
+import diffusion
 N_ROUNDS = 10
 
 key = b'\xc3,\\\xa6\xb5\x80^\x0c\xdb\x8d\xa5z*\xb6\xfe\\'
@@ -37,14 +38,14 @@ def expand_key(master_key):
             # Circular shift.
             word.append(word.pop(0))
             # Map to S-BOX.
-            word = [s_box[b] for b in word]
+            word = [confucion_sustitucion.s_box[b] for b in word]
             # XOR with first byte of R-CON, since the others bytes of R-CON are 0.
             word[0] ^= r_con[i]
             i += 1
         elif len(master_key) == 32 and len(key_columns) % iteration_size == 4:
             # Run word through S-box in the fourth iteration when using a
             # 256-bit key.
-            word = [s_box[b] for b in word]
+            word = [confucion_sustitucion.s_box[b] for b in word]
 
         # XOR with equivalent word from previous iteration.
         word = bytes(i ^ j for i, j in zip(word, key_columns[-iteration_size]))
@@ -55,20 +56,19 @@ def expand_key(master_key):
 
 
 def decrypt(key, ciphertext):
-    round_keys = expand_key(
-        key)  # Remember to start from the last round key and work backwards through them when decrypting
+    round_keys = expand_key(key)  # Remember to start from the last round key and work backwards through them when decrypting
 
     # Convert ciphertext to state matrix
     state = Structure_of_AES.bytes2matrix(ciphertext)
     # Initial add round key step
 
     for i in range(N_ROUNDS - 1, 0, -1):
-        pass  # Do round
+        addroundkey.add_round_key(state,round_keys)
 
     # Run final round (skips the InvMixColumns step)
 
     # Convert state matrix to plaintext
-
+    plaintext = Structure_of_AES.matrix2bytes(state)
     return plaintext
 
 
